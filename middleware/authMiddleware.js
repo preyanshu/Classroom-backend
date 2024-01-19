@@ -1,26 +1,39 @@
-const jwt = require("jsonwebtoken");
-const User = require("../Models/user");
+const jwt = require('jsonwebtoken');
+const Teacher = require('../models/Teacher');
+const Student = require('../models/Student');
 
-const protect = async (req, res, next) => {
-  // Get the token from the request header
-  const token = req.header("Authorization");
+exports.authenticateTeacher = async (req, res, next) => {
+    try {
+        const token = req.header('Authorization').replace('Bearer ', '');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const teacher = await Teacher.findOne({ _id: decoded.id });
 
-  if (!token) {
-    // If token is not provided, return an error
-    return res.status(401).json({ error: "Unauthorized: Token is missing" });
-  }
+        if (!teacher) {
+            throw new Error();
+        }
 
-  try {
-    // Verify and decode the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Attach the user information to the request object for later use
-    req.user = await User.findById(decoded.id).select("-password");
-
-    next(); // Continue to the protected route
-  } catch (error) {
-    res.status(401).json({ error: "Unauthorized: Invalid token" });
-  }
+        req.teacher = teacher;
+        req.token = token;
+        next();
+    } catch (error) {
+        res.status(401).json({ error: 'Please authenticate' });
+    }
 };
 
-module.exports = { protect };
+exports.authenticateStudent = async (req, res, next) => {
+    try {
+        const token = req.header('Authorization').replace('Bearer ', '');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const student = await Student.findOne({ _id: decoded.id });
+
+        if (!student) {
+            throw new Error();
+        }
+
+        req.student = student;
+        req.token = token;
+        next();
+    } catch (error) {
+        res.status(401).json({ error: 'Please authenticate' });
+    }
+};

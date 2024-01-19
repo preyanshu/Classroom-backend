@@ -1,36 +1,49 @@
-const express = require("express");
-const connectDB = require("./config/db");
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 const dotenv = require("dotenv");
-const cors = require("cors");
-const bookRoutes = require("./Routes/bookRoutes");
-const userRoutes = require("./Routes/userRoutes");
-const app = express();
-
 dotenv.config();
+main().catch((err) => console.error(err));
+const cors = require('cors');
+
+// const app = express();
+
+// Enable all CORS requests
+
+
+const app = express();
+const port = process.env.PORT || 3000;
 app.use(cors());
 
-// Connect to the database
-connectDB();
+// MongoDB Connection
+async function main() {
+    try {
+      await mongoose.connect(process.env.MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log("Database connected");
+    } catch (error) {
+      console.error("Error connecting to MongoDB:", error);
+    }
+  }
 
-// Middleware for parsing JSON
-app.use(express.json());
+// Middleware
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
-app.use("/api/books", bookRoutes);
-app.use("/api/users", userRoutes);
+const teacherRoutes = require('./routes/teacherRoutes');
+const studentRoutes = require('./routes/studentRoutes');
+const authRoutes = require('./routes/authRoutes');
+const protectedRoutes = require('./routes/protectedRoutes');
 
-// Error Handling Middleware
-app.use((req, res, next) => {
-  return res.status(404).json({ error: "Route not found" });
-});
+app.use('/teacher', teacherRoutes);
+app.use('/student', studentRoutes);
+app.use('/auth', authRoutes);
+app.use('/protected', protectedRoutes);
 
-app.use((err, req, res, next) => {
-  console.error("Error:", err);
-  return res.status(500).json({ error: "Unknown server error" });
-});
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Start the server
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
